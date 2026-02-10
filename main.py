@@ -2,7 +2,7 @@ from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
-import openai
+from openai import OpenAI  # 1. ここを新しくしたよ
 
 app = Flask(__name__)
 
@@ -16,7 +16,8 @@ if not LINE_CHANNEL_SECRET or not LINE_CHANNEL_ACCESS_TOKEN or not OPENAI_API_KE
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-openai.api_key = OPENAI_API_KEY
+# 2. OpenAIの「窓口」を新しく作ったよ
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 @app.route("/callback", methods=["POST"])
 def callback():
@@ -32,8 +33,24 @@ def callback():
 def handle_message(event):
     user_text = event.message.text
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o",
+    # 3. GPT-4oを呼び出す書き方を最新版にしたよ
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": user_text}]
+        )
+        reply_text = response.choices[0].message.content
+    except Exception as e:
+        # もしエラーが起きたら、その内容をLINEに返して教えてくれるようにしたよ
+        reply_text = f"エラーが起きちゃった：{e}"
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=reply_text)
+    )
+
+if __name__ == "__main__":
+    app.run()
         messages=[{"role": "user", "content": user_text}]
     )
     reply_text = response.choices[0].message.content

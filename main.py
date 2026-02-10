@@ -6,19 +6,16 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-# Railwayの「Variables」から設定を読み込むよ
+# --- 設定読み込み ---
 LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# 必要な設定が足りないときはエラーを出すよ
-if not LINE_CHANNEL_SECRET or not LINE_CHANNEL_ACCESS_TOKEN or not OPENAI_API_KEY:
-    raise ValueError("Environment variables missing!")
+Ue535481e9b98c538d720923fbe16424f
+ALLOWED_USER_ID = "YOUR_OWN_USER_ID" 
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
-# OpenAIの窓口（クライアント）を準備するよ
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 @app.route("/callback", methods=["POST"])
@@ -33,29 +30,38 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    # 🕵️ 送ってきた人のIDを取得する
+    user_id = event.source.user_id
+
+    # 🔑 自分のIDと一致するかチェック！
+    # もし「自分のIDを知りたい時」は、一旦この下の print を有効にするとログで見れるよ
+    print(f"DEBUG: ユーザーIDは {user_id} です")
+
+    if user_id != ALLOWED_USER_ID:
+        # 知らない人だったら、何もせずに ぴたっ と止める
+        # もしくは、あえて「あなたには教えません！」って返事させることもできるよ
+        return 
+
     user_text = event.message.text
 
-    # ここから下がGPT-4oにお願いする部分だよ
     try:
-        # 1. GPT-4oに返答を考えてもらう
+        # GPT-4oへのリクエスト（ここにお願いを詰め込むよ）
         response = client.chat.completions.create(
             model="gpt-4o",
-            messages=[{"role": "user", "content": user_text}]
+            messages=[
+                {"role": "system", "content": "あなたは親切な助手です。"},
+                {"role": "user", "content": user_text}
+            ]
         )
-        # 2. 返ってきた言葉を取り出す
         reply_text = response.choices[0].message.content
-        
     except Exception as e:
-        # もし何かエラー（お金足りないとか）が起きたらLINEに表示するよ
-        reply_text = f"エラーが発生しました：{e}"
+        reply_text = f"エラーだよ：{e}"
 
-    # 3. LINEに返信を送る
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=reply_text)
     )
 
 if __name__ == "__main__":
-    # Railwayで動かすための設定だよ
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

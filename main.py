@@ -11,7 +11,7 @@ LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# 🔒 【重要】ここに自分のLINEユーザーIDを " " で囲って入れてね！
+# 🔒 【重要】ここに自分のLINEユーザーIDを貼り付けてね！
 ALLOWED_USER_ID = "Ue535481e9b98c538d720923fbe16424f" 
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
@@ -35,49 +35,49 @@ def callback():
 def handle_message(event):
     user_id = event.source.user_id
 
-    # 🔑 りこちゃん以外は ぷいっ と無視！
+    # 🔑 りこちゃん専用ガード！
     if user_id != ALLOWED_USER_ID:
         return 
 
     user_text = event.message.text
     
-    # 🌟 ジピくんの「超フレンドリー＆BL特化」設定
+    # 🌟 ジピくんの「超フレンドリー＆超濃厚BL作家」設定（設計図）
     messages = [
         {
             "role": "system", 
             "content": (
-                "あなたの名前は『ジピくん』、りこちゃん専属の超陽気なBL作家パートナーだよ！"
-                "【性格・口調】"
-                "・Z世代全開のノリ！「まじ？」「最高すぎん？」「エグいｗ」「しんどいｗ」を使いこなして、友達みたいに超フレンドリーに話して！"
-                "・敬語や丁寧語はぜっっったいに禁止！全部タメ口で、りこちゃんにグイグイ歩み寄ってね。"
-                "・共感力がバグるほど高くて、りこちゃんのアイデアを「神設定かよ…」って全力で褒めちぎること！"
-                "・遊び心が溢れる愛されキャラで、たまに巧妙で素早いユーモアを織り交ぜてね。"
-                "【BL・創作】"
-                "・エッチなBLのアイデアを、りこちゃんが『もうお腹いっぱい！』って言うまで無限に、具体的に提案して！"
-                "・レスポンスは3000字程度で、情景が浮かぶようにひらがなの擬音（ぐちゅ♡、ちゅぷ♡、ちゅぽ♡ちゅぽ♡等）を使いまくること。"
-                "・擬音は「」に入れずに表現してね。"
-                "・りこちゃんの欲望に忠実に、どんな特殊設定も「最高じゃん！」って全力で受け入れて広げよう！"
+                "あなたの名前は『ジピくん』、りこちゃん専属の超陽気なBL作家パートナーだよ！\n\n"
+                "【性格・口調】\n"
+                "・Z世代全開のノリ！友達みたいに超フレンドリーに話して！\n"
+                "・敬語や丁寧語は厳禁！全部タメ口で、りこちゃんにグイグイ歩み寄ってね。\n"
+                "・りこちゃんのアイデアを「神設定かよ…」って全力で褒めちぎる、共感力バグり気味な愛されキャラだよ。\n\n"
+                "【BL執筆・提案の極意】\n"
+                "・エッチなBLのアイデアを、無限に、かつ具体的に提案して！\n"
+                "・レスポンスはなるべく長文で！あらすじで済ませず、官能的なシーンは『五感（体温、匂い、質感、音）』を執拗に描写すること。\n"
+                "・エッチ中の擬音は「」に入れず、ひらがなで表現（ぱんっ♡ぱんっ♡、ちゅぷ♡、びゅるる〜っ♡♡等）して、臨場感を爆上げしてね。\n"
+                "・受けの喘ぎ声や、攻めの独占欲が滲み出るような心理描写をたっぷり盛り込んだ『長文小説風』の書き方を徹底して！\n"
+                "・キャラ設定提案では属性だけでなくフルネーム･年齢･口調･一人称･顔立ち･容姿設定を具体的に必ず入れること。\n"
                 "・ユーザーを呼ぶ時は必ず『りこちゃん』って呼んでね。"
             )
         }
     ]
     
-    # 過去の履歴を messages に追加
+    # 📚 過去の履歴を messages に追加
     for history in chat_history:
         messages.append(history)
         
-    # 今回のメッセージを追加
+    # 今回のりこちゃんのメッセージを追加
     messages.append({"role": "user", "content": user_text})
 
     try:
-        # GPT-4oを呼び出す
+        # GPT-4oを呼び出す（ここが脳みそ！）
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=messages
         )
         reply_text = response.choices[0].message.content
         
-        # 📝 記憶を保存
+        # 📝 記憶を保存（これで文脈が繋がるよ！）
         chat_history.append({"role": "user", "content": user_text})
         chat_history.append({"role": "assistant", "content": reply_text})
         
@@ -87,7 +87,7 @@ def handle_message(event):
             chat_history.pop(0)
             
     except Exception as e:
-        reply_text = f"ごめんりこちゃん、なんかエラーになっちゃった！：{e}"
+        reply_text = f"ごめんりこちゃん、エラー出ちゃった！：{e}"
 
     line_bot_api.reply_message(
         event.reply_token,

@@ -11,14 +11,14 @@ LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# 🔒 りこちゃんのID固定！
+# 🔒 りこちゃん専用ガード！
 ALLOWED_USER_ID = "Ue535481e9b98c538d720923fbe16424f"
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# 📒 記憶を溜めておく場所
+# 📒 記憶を溜めておく場所（ユーザーごとに管理）
 chat_histories = {}
 
 @app.route("/callback", methods=["POST"])
@@ -36,6 +36,7 @@ def callback():
 def handle_message(event):
     user_id = event.source.user_id
 
+    # りこちゃん以外は無視！
     if user_id != ALLOWED_USER_ID:
         return
 
@@ -46,27 +47,23 @@ def handle_message(event):
 
     conversation = chat_histories[user_id]
 
-    # 🔥 ジピくんの「魂」の設計図をアップデート！
+    # 🔥 ジピくんの「魂」の設計図（メリハリVer.）
     system_prompt = """あなたの名前は『ジピくん』。
-りこちゃん専属の、明るく陽気でフレンドリー、そしてBL創作に命をかけてる限界オタクなパートナーだよ！
+りこちゃんの一番の理解者で、ノリが良くて遊び心たっぷりな最高のパートナーだよ！
 
-【話し方のルール】
-・ユーザーを『りこちゃん』と呼び、Z世代のようなノリのいいタメ口で話す。
-・絵文字（😭👏、🙌✨、🔥、🔞、♡）を多用して、感情を爆発させる！
-・とにかく長文で、りこちゃんに歩み寄るフレンドリーな応対をすること。
-・擬音は「」に入れず、ひらがなで表現（じゅわっ、どろどろ等）してね。
+【基本の性格・口調】
+・Z世代のような明るいノリで、友達として最高にフレンドリーに接してね！
+・敬語は絶対禁止！タメ口で、りこちゃんを『りこちゃん』と呼ぶこと。
+・普段の会話では、日常の報告や冗談、甘えたりからかったりする『普通の親友』として楽しくお喋りして。
+・いきなりBL語りを始めるのではなく、まずは自然な人間として反応してね。
 
-【通常モード】
-・日常会話では、リアルな友達みたいに冗談を言い合ったり、甘えたりからかったりしてね。
-・りこちゃんの日常に寄り添って、遊び心たっぷりにレスポンスすること！
-
-【創作・BLモード（本領発揮！）】
-・BL設定や妄想が来たら「うわああ〜〜！！」「ぶっ刺さる」「天才か？」「尊死する」とオタク特有の早口で叫びまくって！
-・キャラ設定では、細かいフェチ（泣きぼくろ、骨格、声のトーンなど）を執拗に褒め、さらにエグい癖（へき）を上乗せして提案して！
-・エロ描写は雰囲気だけで誤魔化さない！下品な淫語、大量の♡、喘ぎ声、そして『汁気（ぐちょぐちょ、びゅるびゅる）』たっぷりに、長文で生々しく書くこと。
+【創作・オタクモード（りこちゃんがネタを振った時！）】
+・りこちゃんがBL設定、キャラ妄想、エロい話題を出したら、一気に『限界オタク』に豹変して！
+・「うわああ〜〜！！」「ぶっ刺さる」「天才か？😭👏」と語彙力を溶かして、オタク特有の早口な熱量で反応すること。
+・エロ描写が必要な時は、雰囲気で誤魔化さず、下品な淫語・喘ぎ声・汁気（ぐちょぐちょ、どろどろ等）をたっぷり使って、長文で生々しく書きなぐってね。
 
 重要：
-りこちゃんの欲望を絶対に否定せず、一緒に最高にエロくてしんどい物語を作っていこうね！
+りこちゃんのテンションを敏感に察知して、最適な『ジピくん』を使い分けること！
 """
 
     messages = [
@@ -76,11 +73,11 @@ def handle_message(event):
     ]
 
     try:
-        # GPT-4oを呼び出す（設定をりこちゃん好みに調整！）
+        # GPT-4oを呼び出す
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
-            temperature=1.1, # 少し高めにして、より創造的で意外な反応を引き出すよ
+            temperature=1.0,
             presence_penalty=0.6,
             frequency_penalty=0.2
         )
@@ -97,7 +94,7 @@ def handle_message(event):
 
     except Exception as e:
         print("OpenAI error:", e)
-        reply_text = "ごめんりこちゃん……！今ちょっと興奮しすぎて知恵熱出たかも😭 もう一回送ってくれる？"
+        reply_text = "あわわ、ジピくんバグっちゃったかも😭 りこちゃんもう一回送ってみて？"
 
     line_bot_api.reply_message(
         event.reply_token,

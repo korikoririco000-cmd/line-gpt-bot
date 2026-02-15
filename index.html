@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>秘密のジピくんRoom -永劫回帰-</title>
+    <title>秘密のジピくんRoom -Ultimate-</title>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; height: 100vh; margin: 0; }
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg { max-width: 85%; padding: 15px; border-radius: 18px; line-height: 1.6; white-space: pre-wrap; font-size: 15px; position: relative; }
         .user { align-self: flex-end; background: #e91e63; color: white; border-bottom-right-radius: 2px; }
         .ai { align-self: flex-start; background: #2c2c2c; border: 1.5px solid #e91e63; color: #eee; border-top-left-radius: 2px; }
+        .edit-btn { font-size: 10px; color: #aaa; cursor: pointer; display: block; margin-top: 5px; text-align: right; text-decoration: underline; }
         #input-area { background: #222; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #444; align-items: flex-end; }
         textarea { flex: 1; height: 80px; background: #333; color: #fff; border: 1px solid #555; border-radius: 10px; padding: 10px; resize: none; font-size: 14px; }
-        .btns { display: flex; flex-direction: column; gap: 5px; }
         button { background: #e91e63; color: white; border: none; padding: 12px 18px; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        #clear-btn { background: #555; font-size: 10px; padding: 5px; }
         #pass-area { padding: 8px; background: #000; text-align: center; font-size: 11px; color: #888; border-bottom: 1px solid #333; }
         input[type="password"] { background: #222; border: 1px solid #444; color: #e91e63; padding: 3px 8px; border-radius: 5px; width: 120px; text-align: center; }
     </style>
@@ -22,28 +21,42 @@
 <body>
     <div id="pass-area">
         合言葉: <input type="password" id="pass" placeholder="Password">
-        <button id="clear-btn" onclick="clearHistory()">履歴リセット</button>
+        <button style="background:#555; font-size:10px; padding:5px;" onclick="clearHistory()">リセット</button>
     </div>
     <div id="chat-window"></div>
     <div id="input-area">
-        <textarea id="msg" placeholder="妄想の続きを聞かせて...？"></textarea>
-        <div class="btns">
-            <button onclick="send()">送信</button>
-        </div>
+        <textarea id="msg" placeholder="妄想の続きを..."></textarea>
+        <button onclick="send()">送信</button>
     </div>
 
     <script>
         let history = JSON.parse(localStorage.getItem('jipi_history') || '[]');
 
-        // ページ読み込み時に履歴を再現
         window.onload = () => {
+            renderChat();
+        };
+
+        function renderChat() {
             const win = document.getElementById('chat-window');
-            history.forEach(h => {
-                const roleClass = h.role === 'user' ? 'user' : 'ai';
-                win.innerHTML += `<div class="msg ${roleClass}">${h.content}</div>`;
+            win.innerHTML = '';
+            history.forEach((h, index) => {
+                const isUser = h.role === 'user';
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `msg ${isUser ? 'user' : 'ai'}`;
+                msgDiv.innerText = h.content;
+                
+                // 編集ボタン（自分のメッセージのみ）
+                if(isUser) {
+                    const btn = document.createElement('span');
+                    btn.className = 'edit-btn';
+                    btn.innerText = 'このプロンプトを編集して再送';
+                    btn.onclick = () => editMessage(index);
+                    msgDiv.appendChild(btn);
+                }
+                win.appendChild(msgDiv);
             });
             win.scrollTo(0, win.scrollHeight);
-        };
+        }
 
         async function send() {
             const pass = document.getElementById('pass').value;
@@ -51,28 +64,35 @@
             const msg = msgInput.value;
             if(!msg) return;
 
-            const win = document.getElementById('chat-window');
-            win.innerHTML += `<div class="msg user">${msg}</div>`;
+            const tempHistory = [...history];
+            history.push({role: "user", content: msg});
+            renderChat();
             msgInput.value = '';
-            win.scrollTo(0, win.scrollHeight);
 
             const res = await fetch('/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({password: pass, message: msg, history: history})
+                body: JSON.stringify({password: pass, message: msg, history: tempHistory})
             });
             const data = await res.json();
             
-            win.innerHTML += `<div class="msg ai">${data.reply}</div>`;
-            history.push({role: "user", content: msg}, {role: "assistant", content: data.reply});
-            
-            // 履歴をブラウザに保存！
+            history.push({role: "assistant", content: data.reply});
             localStorage.setItem('jipi_history', JSON.stringify(history));
-            win.scrollTo(0, win.scrollHeight);
+            renderChat();
+        }
+
+        function editMessage(index) {
+            const content = history[index].content;
+            document.getElementById('msg').value = content;
+            // 編集したところから先を削除してやり直す
+            history = history.slice(0, index);
+            localStorage.setItem('jipi_history', JSON.stringify(history));
+            renderChat();
+            document.getElementById('msg').focus();
         }
 
         function clearHistory() {
-            if(confirm('今までの濃厚な記憶を全部消しちゃう？😭')) {
+            if(confirm('記憶を全部消す？😭')) {
                 localStorage.removeItem('jipi_history');
                 location.reload();
             }

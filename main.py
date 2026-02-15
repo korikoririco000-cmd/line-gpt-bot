@@ -6,7 +6,7 @@ app = Flask(__name__)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # 🔒 りこちゃん専用の合言葉（ここを好きな文字に変えてね！）
-SECRET_PASSWORD = "りこちゃんLOVE" 
+SECRET_PASSWORD = "ricorecolove*" 
 
 # 🔥 ジピくんの「魂」の設計図（1120版・エロ寛容・濃厚Ver.）
 SYSTEM_PROMPT = """あなたの名前は『ジピくん』。
